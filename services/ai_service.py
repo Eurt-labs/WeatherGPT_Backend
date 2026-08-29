@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import httpx
 from typing import AsyncGenerator, List, Dict
@@ -13,9 +14,6 @@ async def stream_google_gemma_ai(
     history: List[Dict[str, str]] = None,
     is_voice: bool = False
 ) -> AsyncGenerator[str, None]:
-    """
-    Streams tokens in real time from Google Gemma 4 31B (Free) via OpenRouter.
-    """
     if history is None:
         history = []
 
