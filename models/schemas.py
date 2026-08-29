@@ -17,6 +17,29 @@ class DayItem(BaseModel):
     max_temp: str
     condition: str
 
+class AgriMetrics(BaseModel):
+    soil_moisture_surface: str
+    soil_temperature: str
+    evapotranspiration: str
+    irrigation_advice: str
+
+class DisasterAlerts(BaseModel):
+    flood_risk_level: str
+    river_discharge_m3s: str
+    heatwave_alert: str
+    storm_warning: str
+
+class AviationMetrics(BaseModel):
+    visibility_km: str
+    cloud_cover_pct: str
+    wind_gusts_kmh: str
+    freezing_level_m: str
+
+class ClimateTrends(BaseModel):
+    past_7days_rain_mm: str
+    temp_anomaly: str
+    drought_risk: str
+
 class WeatherResponse(BaseModel):
     temperature: str
     condition: str
@@ -27,10 +50,15 @@ class WeatherResponse(BaseModel):
     location_name: str
     hourly_forecast: List[HourlyItem]
     daily_forecast: List[DayItem]
+    agriculture: Optional[AgriMetrics] = None
+    disaster_alerts: Optional[DisasterAlerts] = None
+    aviation: Optional[AviationMetrics] = None
+    climate_trends: Optional[ClimateTrends] = None
 
 class ChatRequest(BaseModel):
-    message: str = Field(..., description="User question or voice transcript")
+    message: str = Field(..., description="User query or voice transcript in any Indian language")
     location: str = Field(default="Hathras, Uttar Pradesh", description="Location name")
     weather_context: str = Field(default="32°C, Mostly Cloudy, Wind 6 km/h, Humidity 59%, AQI 64", description="Atmospheric context")
+    sector_focus: str = Field(default="general", description="Focus area: general, agriculture, disaster, aviation, marine, climate")
     history: List[Dict[str, str]] = Field(default_factory=list, description="Recent conversation history")
     is_voice_mode: bool = Field(default=False, description="True if prompt comes from Voice AI")
