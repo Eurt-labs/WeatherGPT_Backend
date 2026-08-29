@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
+import hmac
+import hashlib
+import time
 from fastapi import FastAPI, HTTPException, Query, Header, Request, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
@@ -15,22 +18,21 @@ from services.ai_service import stream_google_gemma_ai
 
 load_dotenv()
 
-# Client Secret Token for authenticating mobile requests
-CLIENT_SECRET = os.getenv("APP_CLIENT_SECRET", "weathergpt_prod_client_auth_secret_2026")
+# Master Shared Secret for HMAC Signing
+HMAC_SECRET = os.getenv("APP_CLIENT_SECRET", "weathergpt_prod_client_auth_secret_2026")
 
 # Rate Limiter setup (60 requests per minute per IP)
 limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
 
 app = FastAPI(
     title="WeatherGPT Cloud Engine",
-    version="2.1.0",
-    description="Live Meteorological Intelligence & Secure Google Gemma 4 31B AI API"
+    version="2.2.0",
+    description="Live Meteorological Intelligence & Cryptographically Hardened Google Gemma 4 AI API"
 )
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS Policy
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,17 +41,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def verify_client_token(x_weathergpt_key: str = Header(default=None)):
+def verify_hmac_or_token(
+    request: Request,
+    x_weathergpt_key: str = Header(default=None),
+    x_timestamp: str = Header(default=None),
+    x_signature: str = Header(default=None)
+):
     """
-    Security Dependency: Validates the custom client authentication header.
+    Enterprise Security Middleware:
+    1. Dynamic HMAC-SHA256 Signature Verification with 60-second replay window.
+    2. Static Key Fallback verification.
     """
-    if CLIENT_SECRET and CLIENT_SECRET != "":
-        if not x_weathergpt_key or x_weathergpt_key != CLIENT_SECRET:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Unauthorized: Invalid or missing X-WeatherGPT-Key authentication header."
-            )
-    return True
+    # 1. Dynamic HMAC Verification
+    if x_timestamp and x_signature and HMAC_SECRET:
+        try:
+            req_time = int(x_timestamp)
+            current_time = int(time.time())
+            # Reject if timestamp differs by more than 60 seconds (prevents replay attacks)
+            if abs(current_time - req_time) > 60:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Unauthorized: Request timestamp expired (replay attack detected)."
+                )
+            
+            # Recompute HMAC SHA-256
+            message = f"{x_timestamp}:{request.url.path}".encode("utf-8")
+            expected_sig = hmac.new(HMAC_SECRET.encode("utf-8"), message, hashlib.sha256).hexdigest()
+            
+            if hmac.compare_digest(expected_sig, x_signature):
+                return True
+        except ValueError:
+            pass
+
+    # 2. Static Header Fallback
+    if HMAC_SECRET and x_weathergpt_key == HMAC_SECRET:
+        return True
+
+    # If both fail, reject unauthorized
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Unauthorized: Invalid HMAC cryptographic signature or client key."
+    )
 
 @app.get("/", tags=["Health"])
 @limiter.limit("120/minute")
@@ -57,8 +89,8 @@ def health_check(request: Request):
     return {
         "status": "online",
         "service": "WeatherGPT FastAPI Backend",
+        "security": "HMAC-SHA256 Dynamic Request Signing + Rate Limiting Active",
         "ai_engine": "Google: Gemma 4 31B (Free)",
-        "security": "Rate Limiting & Client Auth Active",
         "weather_source": "OpenWeatherMap + Open-Meteo Fallback"
     }
 
@@ -68,11 +100,8 @@ async def get_current_weather(
     request: Request,
     lat: float = Query(default=27.5966, description="Latitude (e.g. 27.5966 for Hathras)"),
     lon: float = Query(default=78.0519, description="Longitude (e.g. 78.0519 for Hathras)"),
-    auth: bool = Depends(verify_client_token)
+    auth: bool = Depends(verify_hmac_or_token)
 ):
-    """
-    Protected endpoint: Fetches real-time weather and CPCB AQI. Requires X-WeatherGPT-Key header.
-    """
     data = await get_live_meteorological_data(lat, lon)
     if "error" in data:
         raise HTTPException(status_code=502, detail=data["error"])
@@ -83,11 +112,8 @@ async def get_current_weather(
 async def post_current_weather(
     request: Request,
     req: WeatherRequest,
-    auth: bool = Depends(verify_client_token)
+    auth: bool = Depends(verify_hmac_or_token)
 ):
-    """
-    Protected POST endpoint for Android app passing JSON payload with coordinates.
-    """
     data = await get_live_meteorological_data(req.latitude, req.longitude)
     if "error" in data:
         raise HTTPException(status_code=502, detail=data["error"])
@@ -98,11 +124,8 @@ async def post_current_weather(
 async def ai_chat_stream(
     request: Request,
     req: ChatRequest,
-    auth: bool = Depends(verify_client_token)
+    auth: bool = Depends(verify_hmac_or_token)
 ):
-    """
-    Protected Server-Sent Events (SSE) stream from Google Gemma 4 31B.
-    """
     return EventSourceResponse(
         stream_google_gemma_ai(
             user_message=req.message,
@@ -117,5 +140,5 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
-    print(f"Starting Secure WeatherGPT Backend on http://{host}:{port}")
+    print(f"Starting HMAC Hardened WeatherGPT Backend on http://{host}:{port}")
     uvicorn.run("main:app", host=host, port=port, reload=True)
