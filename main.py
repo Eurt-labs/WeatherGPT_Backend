@@ -91,7 +91,7 @@ def health_check(request: Request):
         "service": "WeatherGPT FastAPI Backend",
         "security": "HMAC-SHA256 Dynamic Request Signing + Rate Limiting Active",
         "ai_engine": "Google: Gemma 4 31B (Free)",
-        "weather_source": "OpenWeatherMap + Open-Meteo Fallback"
+        "weather_source": "Pure Open-Meteo High-Precision Global Engine (Zero-Key)"
     }
 
 @app.get("/api/weather/current", tags=["Weather"])
