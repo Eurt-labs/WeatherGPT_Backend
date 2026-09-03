@@ -16,7 +16,7 @@ async def stream_google_gemma_ai(
     is_voice: bool = False
 ) -> AsyncGenerator[str, None]:
     """
-    Multi-Sector Google Gemma 4 31B Streaming Reasoning Engine.
+    Multi-Sector Google Gemini 2.5 Flash 31B Streaming Reasoning Engine.
     Handles Natural Language queries for Farmers, Disaster Managers, Pilots, Fishermen & Researchers
     across Indian languages (Hindi, Marathi, Bengali, Tamil, Telugu, English).
     """
@@ -25,7 +25,7 @@ async def stream_google_gemma_ai(
 
     if is_voice:
         system_prompt = (
-            f"You are WeatherGPT Voice powered by Google Gemma 4.\n"
+            f"You are WeatherGPT Voice powered by Google Gemini 2.5 Flash.\n"
             f"Location: {location}\n"
             f"Live Multi-Sector Meteorological Context: {weather_context}\n\n"
             f"CRITICAL RULES:\n"
@@ -35,7 +35,7 @@ async def stream_google_gemma_ai(
         )
     else:
         system_prompt = (
-            f"You are WeatherGPT, India's premier Conversational Weather & Climate Intelligence Platform powered by Google Gemma 4.\n"
+            f"You are WeatherGPT, India's premier Conversational Weather & Climate Intelligence Platform powered by Google Gemini 2.5 Flash.\n"
             f"Location: {location}\n"
             f"Sector Focus: {sector_focus.upper()}\n"
             f"Live Multi-Sector Meteorological Context: {weather_context}\n\n"
@@ -61,7 +61,7 @@ async def stream_google_gemma_ai(
         headers["Authorization"] = f"Bearer {OPENROUTER_API_KEY}"
 
     payload = {
-        "model": "google/gemma-4-31b-it:free",
+        "model": "google/gemini-2.5-flash",
         "stream": True,
         "messages": messages,
         "temperature": 0.3,
