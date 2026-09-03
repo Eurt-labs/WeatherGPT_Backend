@@ -12,7 +12,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from models.schemas import WeatherRequest, WeatherResponse, ChatRequest
+from models.schemas import WeatherRequest, WeatherResponse, ChatRequest, AuthSendOtpRequest, AuthVerifyOtpRequest, AuthResponse, UserProfileRequest
+from services.supabase_service import send_otp, verify_otp, upsert_user_profile, get_user_profile
 from services.weather_service import get_live_meteorological_data
 from services.ai_service import stream_google_gemma_ai
 
@@ -163,6 +164,50 @@ async def ai_chat_stream(
             is_voice=req.is_voice_mode
         )
     )
+
+
+@app.post("/api/auth/send-otp", tags=["Supabase Auth"])
+@limiter.limit("15/minute")
+async def handle_send_otp(
+    request: Request,
+    req: AuthSendOtpRequest,
+    auth: bool = Depends(verify_hmac_or_token)
+):
+    result = await send_otp(req.contact, req.channel)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=400, detail=result.get("message"))
+    return result
+
+@app.post("/api/auth/verify-otp", tags=["Supabase Auth"])
+@limiter.limit("20/minute")
+async def handle_verify_otp(
+    request: Request,
+    req: AuthVerifyOtpRequest,
+    auth: bool = Depends(verify_hmac_or_token)
+):
+    result = await verify_otp(req.contact, req.token, req.channel)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=401, detail=result.get("message"))
+    return result
+
+@app.post("/api/user/profile", tags=["User Personalization"])
+async def handle_save_user_profile(
+    request: Request,
+    req: UserProfileRequest,
+    auth: bool = Depends(verify_hmac_or_token)
+):
+    result = await upsert_user_profile(req.model_dump())
+    return result
+
+@app.get("/api/user/profile", tags=["User Personalization"])
+async def handle_get_user_profile(
+    user_id: str = Query(...),
+    auth: bool = Depends(verify_hmac_or_token)
+):
+    profile = await get_user_profile(user_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="User profile not found")
+    return profile
 
 if __name__ == "__main__":
     import uvicorn

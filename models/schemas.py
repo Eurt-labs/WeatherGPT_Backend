@@ -62,3 +62,32 @@ class ChatRequest(BaseModel):
     sector_focus: str = Field(default="general", description="Focus area: general, agriculture, disaster, aviation, marine, climate")
     history: List[Dict[str, str]] = Field(default_factory=list, description="Recent conversation history")
     is_voice_mode: bool = Field(default=False, description="True if prompt comes from Voice AI")
+
+
+class AuthSendOtpRequest(BaseModel):
+    contact: str = Field(..., description='Email address or phone number (with country code)')
+    channel: str = Field(default='email', description='email or phone')
+
+class AuthVerifyOtpRequest(BaseModel):
+    contact: str = Field(..., description='Email address or phone number')
+    token: str = Field(..., description='6-digit OTP token')
+    channel: str = Field(default='email', description='email or phone')
+
+class UserProfileRequest(BaseModel):
+    user_id: str
+    name: str
+    contact: str
+    contact_type: str = 'email'
+    sector: str = 'farmer' # farmer, disaster, commuter, aviation
+    language: str = 'en'
+    crops: Optional[str] = None
+    land_area: Optional[str] = None
+    monitored_region: Optional[str] = None
+
+class AuthResponse(BaseModel):
+    status: str
+    message: str
+    user_id: Optional[str] = None
+    session_token: Optional[str] = None
+    is_new_user: bool = False
+    profile: Optional[Dict[str, Any]] = None
