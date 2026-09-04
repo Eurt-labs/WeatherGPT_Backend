@@ -60,6 +60,7 @@ class ChatRequest(BaseModel):
     location: str = Field(default="Hathras, Uttar Pradesh", description="Location name")
     weather_context: str = Field(default="32°C, Mostly Cloudy, Wind 6 km/h, Humidity 59%, AQI 64", description="Atmospheric context")
     sector_focus: str = Field(default="general", description="Focus area: general, agriculture, disaster, aviation, marine, climate")
+    language: Optional[str] = Field(default="en", description="Preferred language code: en, hi, mr, bn, ta, te, gu")
     history: List[Dict[str, str]] = Field(default_factory=list, description="Recent conversation history")
     is_voice_mode: bool = Field(default=False, description="True if prompt comes from Voice AI")
 

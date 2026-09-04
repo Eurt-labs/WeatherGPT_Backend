@@ -161,7 +161,8 @@ async def ai_chat_stream(
             weather_context=req.weather_context,
             sector_focus=req.sector_focus,
             history=req.history,
-            is_voice=req.is_voice_mode
+            is_voice=req.is_voice_mode,
+            language=req.language
         )
     )
 
