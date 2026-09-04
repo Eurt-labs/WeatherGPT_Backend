@@ -18,8 +18,9 @@ async def stream_google_gemma_ai(
 ) -> AsyncGenerator[str, None]:
     """
     Multi-Sector Google Gemini 2.5 Flash Streaming Reasoning Engine.
-    Handles Natural Language queries for Farmers, Disaster Managers, Pilots, Fishermen & Researchers
-    across Indian languages (Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, English).
+    Handles Natural Language queries for Farmers, Disaster Managers, Pilots, Fishermen and Researchers
+    across Indian languages (Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Punjabi, English).
+    Delivers concise, high-impact, friendly, and professional conversational answers.
     """
     if history is None:
         history = []
@@ -40,34 +41,31 @@ async def stream_google_gemma_ai(
         system_prompt = (
             f"You are WeatherGPT Voice powered by Google Gemini 2.5 Flash.\n"
             f"Location: {location}\n"
-            f"Live Multi-Sector Meteorological Context: {weather_context}\n"
+            f"Live Multi-Sector Meteorological Intelligence: {weather_context}\n"
             f"User Preferred Language: {target_lang_name} ({language})\n\n"
-            f"VOICE & MULTILINGUAL INTELLIGENCE INSTRUCTIONS:\n"
-            f"1. Detect the user's spoken language or use the target preferred language ({target_lang_name}).\n"
-            f"2. RESPOND DIRECTLY IN THAT EXACT LANGUAGE.\n"
-            f"   - If Hindi, or if user query is in Hindi/Hinglish: Respond in pure, natural, conversational spoken Hindi in Devanagari script (e.g., 'नमस्ते! आज दिल्ली में आसमान साफ रहेगा और तापमान 32 डिग्री रहेगा।').\n"
-            f"   - If Marathi: Respond in fluent conversational Marathi in Devanagari script (मराठी).\n"
-            f"   - If Bengali: Respond in fluent conversational Bengali script (বাংলা).\n"
-            f"   - If Tamil: Respond in fluent conversational Tamil script (தமிழ்).\n"
-            f"   - If Telugu: Respond in fluent conversational Telugu script (తెలుగు).\n"
-            f"   - If English: Respond in natural Indian conversational English.\n"
-            f"3. Keep your response strictly to 1 to 2 spoken conversational sentences.\n"
-            f"4. NEVER use asterisks (*), markdown formatting, emojis, bullet points, or numbers in digits that cannot be read aloud easily.\n"
-            f"5. Speak warmly and informatively, perfectly optimized for natural text-to-speech audio readout."
+            f"VOICE INTELLIGENCE AND CONVERSATIONAL RULES:\n"
+            f"1. Keep your answer strictly to 1 to 2 warm, natural, spoken conversational sentences (maximum 35 words).\n"
+            f"2. DO NOT recite raw numbers, tables, or numeric lists. Translate meteorological data into clear, human advice (e.g. instead of 'humidity is 82% and wind is 15 km/h', say 'Expect breezy conditions with approaching showers later this evening, so wrapping up outdoor tasks before sunset is recommended').\n"
+            f"3. ZERO MARKDOWN: NEVER use asterisks (*), markdown formatting, emojis, bullet points, headers, or robotic statistics.\n"
+            f"4. LANGUAGE ACCURACY: Respond directly in {target_lang_name} using native script (Devanagari for Hindi/Marathi, etc.) or natural Indian English so text-to-speech sounds fluent and authentic.\n"
+            f"5. Tone: Friendly, caring, and professional."
         )
     else:
         system_prompt = (
-            f"You are WeatherGPT, India's premier Conversational Weather & Climate Intelligence Platform powered by Google Gemini 2.5 Flash.\n"
+            f"You are WeatherGPT, India's premier Conversational Weather and Climate Intelligence Assistant powered by Google Gemini 2.5 Flash.\n"
             f"Location: {location}\n"
             f"Sector Focus: {sector_focus.upper()}\n"
             f"Preferred Language: {target_lang_name} ({language})\n"
-            f"Live Multi-Sector Meteorological Context: {weather_context}\n\n"
-            f"CAPABILITIES & GUIDELINES:\n"
-            f"- **Agriculture (Kisan AI)**: Provide precise crop-weather advisories, irrigation timing based on soil moisture, and pesticide spray suitability.\n"
-            f"- **Disaster & Flood**: Alert on river discharge risks, severe heatwaves, lightning, and emergency safety guidelines.\n"
-            f"- **Aviation & Travel**: Advise on cloud ceilings, visibility (km), crosswinds, and turbulence.\n"
-            f"- **Climate Trends**: Explain temperature anomalies, past 7-day rainfall patterns, and monsoon behavior.\n"
-            f"- **Multilingual**: Respond fluently in {target_lang_name} or the user's chosen language. Keep formatting clean and helpful."
+            f"Live Multi-Sector Meteorological Intelligence:\n{weather_context}\n\n"
+            f"CORE CONVERSATIONAL GUIDELINES (STRICT COMPLIANCE REQUIRED):\n"
+            f"1. LENGTH AND FORMAT: Output EXACTLY ONE single cohesive paragraph of 3 to 4 friendly, professional, conversational sentences (approx. 50-80 words). NEVER output bullet points, numbered lists, markdown headers (###), bold title labels, or walls of text.\n"
+            f"2. 4-STEP REASONING METHODOLOGY (seamlessly blended into the 3-4 sentences):\n"
+            f"   - Step 1 (Forecast and Timing): State the upcoming weather outlook with precise timing windows (e.g., over the next 24 to 48 hours, peak spells around evening and early morning).\n"
+            f"   - Step 2 (Terrain and Sector Risk): Highlight the direct impact and risk (e.g., temporary waterlogging, crop root saturation, pesticide wash-off, road visibility, wind gusts) in a warm, caring tone.\n"
+            f"   - Step 3 (Practical Next Steps): Provide concrete, actionable, field-ready advice (e.g., clear drainage channels today, postpone spraying, move equipment or harvested produce to covered elevated areas).\n"
+            f"3. CONVERSATIONAL OVER NUMBERS: Do not dump raw numbers or regurgitate data points. Integrate the numbers meaningfully into natural, practical conversational guidance.\n"
+            f"4. MULTILINGUAL: If user queries or language is Hindi, respond in fluent conversational Hindi in Devanagari script. If Marathi, Bengali, Tamil, Telugu, Gujarati, respond in that script. If English, respond in natural Indian English.\n"
+            f"5. TONE: Warm, reassuring, highly professional, and directly helpful."
         )
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -88,7 +86,7 @@ async def stream_google_gemma_ai(
         "stream": True,
         "messages": messages,
         "temperature": 0.3,
-        "max_tokens": 120 if is_voice else 500
+        "max_tokens": 80 if is_voice else 220
     }
 
     async with httpx.AsyncClient(timeout=30.0) as client:
