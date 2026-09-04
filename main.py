@@ -166,7 +166,7 @@ async def ai_chat_stream(
     )
 
 
-@app.post("/api/auth/send-otp", tags=["Supabase Auth"])
+@app.post("/api/auth/send-otp", tags=["Authentication"])
 @limiter.limit("15/minute")
 async def handle_send_otp(
     request: Request,
@@ -178,7 +178,7 @@ async def handle_send_otp(
         raise HTTPException(status_code=400, detail=result.get("message"))
     return result
 
-@app.post("/api/auth/verify-otp", tags=["Supabase Auth"])
+@app.post("/api/auth/verify-otp", tags=["Authentication"])
 @limiter.limit("20/minute")
 async def handle_verify_otp(
     request: Request,
@@ -216,7 +216,7 @@ async def handle_chat_sync(
     req: ChatSyncRequest,
     auth: bool = Depends(verify_hmac_or_token)
 ):
-    """Sync local chat messages to Supabase cloud storage."""
+    """Sync local chat messages to cloud storage."""
     messages_dict = [m.model_dump() for m in req.messages]
     result = await sync_chat_messages(req.user_id, messages_dict)
     if result.get("status") == "error":

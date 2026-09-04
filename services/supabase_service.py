@@ -28,9 +28,9 @@ async def send_otp(contact: str, channel: str = 'email') -> Dict[str, Any]:
                 payload = {'email': contact} if channel == 'email' else {'phone': contact}
                 res = await client.post(f'{SUPABASE_URL}/auth/v1/otp', json=payload, headers=headers)
                 if res.status_code in (200, 201):
-                    return {'status': 'success', 'message': f'OTP sent to {contact} via Supabase'}
+                    return {'status': 'success', 'message': f'OTP sent on {channel}'}
                 else:
-                    return {'status': 'error', 'message': f'Supabase error: {res.text}'}
+                    return {'status': 'error', 'message': 'Verification service error. Please try again.'}
         except Exception as e:
             return {'status': 'error', 'message': str(e)}
 
@@ -40,7 +40,7 @@ async def send_otp(contact: str, channel: str = 'email') -> Dict[str, Any]:
     print(f'[SANDBOX AUTH] Generated OTP for {contact}: {demo_otp}')
     return {
         'status': 'success',
-        'message': f'Sandbox OTP sent to {contact}. (Demo code: 123456)',
+        'message': f'OTP sent on {channel}',
         'sandbox_mode': True
     }
 
@@ -93,7 +93,7 @@ async def verify_otp(contact: str, token: str, channel: str = 'email') -> Dict[s
             'is_new_user': is_new,
             'profile': profile
         }
-    return {'status': 'error', 'message': 'Incorrect OTP. Try 123456 in sandbox mode.'}
+    return {'status': 'error', 'message': 'Incorrect OTP code. Please enter 6-digit code.'}
 
 async def upsert_user_profile(profile_data: Dict[str, Any]) -> Dict[str, Any]:
     user_id = profile_data.get('user_id')
