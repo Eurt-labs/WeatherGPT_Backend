@@ -12,8 +12,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from models.schemas import WeatherRequest, WeatherResponse, ChatRequest, AuthSendOtpRequest, AuthVerifyOtpRequest, AuthResponse, UserProfileRequest
-from services.supabase_service import send_otp, verify_otp, upsert_user_profile, get_user_profile
+from models.schemas import WeatherRequest, WeatherResponse, ChatRequest, AuthSendOtpRequest, AuthVerifyOtpRequest, AuthResponse, UserProfileRequest, ChatSyncRequest, ChatHistoryResponse, ChatMessageItem
+from services.supabase_service import send_otp, verify_otp, upsert_user_profile, get_user_profile, sync_chat_messages, get_user_chat_history, clear_user_chat_history
 from services.weather_service import get_live_meteorological_data
 from services.ai_service import stream_google_gemma_ai
 
@@ -208,6 +208,43 @@ async def handle_get_user_profile(
     if not profile:
         raise HTTPException(status_code=404, detail="User profile not found")
     return profile
+
+
+@app.post("/api/chat/sync", tags=["Cloud Chat Sync"])
+async def handle_chat_sync(
+    request: Request,
+    req: ChatSyncRequest,
+    auth: bool = Depends(verify_hmac_or_token)
+):
+    """Sync local chat messages to Supabase cloud storage."""
+    messages_dict = [m.model_dump() for m in req.messages]
+    result = await sync_chat_messages(req.user_id, messages_dict)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=400, detail=result.get("message"))
+    return result
+
+@app.get("/api/chat/history", tags=["Cloud Chat Sync"])
+async def handle_chat_history(
+    user_id: str = Query(..., description="User ID to fetch cloud chat history for"),
+    auth: bool = Depends(verify_hmac_or_token)
+):
+    """Fetch persistent cloud chat history for user."""
+    raw_messages = await get_user_chat_history(user_id)
+    return {
+        "status": "success",
+        "user_id": user_id,
+        "messages": raw_messages,
+        "total_count": len(raw_messages)
+    }
+
+@app.delete("/api/chat/history", tags=["Cloud Chat Sync"])
+async def handle_clear_chat_history(
+    user_id: str = Query(..., description="User ID to clear cloud chat history for"),
+    auth: bool = Depends(verify_hmac_or_token)
+):
+    """Clear persistent cloud chat history for user."""
+    success = await clear_user_chat_history(user_id)
+    return {"status": "success", "cleared": success}
 
 if __name__ == "__main__":
     import uvicorn

@@ -138,3 +138,100 @@ async def get_user_profile(user_id: str) -> Optional[Dict[str, Any]]:
             pass
 
     return _sandbox_users.get(user_id)
+
+
+# In-memory sandbox storage for chat history fallback
+_sandbox_chats: Dict[str, List[Dict[str, Any]]] = {}
+
+async def sync_chat_messages(user_id: str, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Sync incoming chat messages to Supabase or sandbox storage."""
+    if not user_id:
+        return {"status": "error", "message": "Missing user_id"}
+    
+    current_time = int(time.time())
+    for msg in messages:
+        if not msg.get("created_at"):
+            msg["created_at"] = current_time
+        msg["user_id"] = user_id
+
+    if is_supabase_configured():
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                headers = {
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                    "Content-Type": "application/json",
+                    "Prefer": "resolution=merge-duplicates"
+                }
+                res = await client.post(
+                    f"{SUPABASE_URL}/rest/v1/chat_messages",
+                    json=messages,
+                    headers=headers
+                )
+                if res.status_code in (200, 201, 204):
+                    return {"status": "success", "synced_count": len(messages)}
+                else:
+                    print(f"[SUPABASE CHAT ERROR] {res.status_code}: {res.text}")
+        except Exception as e:
+            print(f"[SUPABASE CHAT EXCEPTION] {e}")
+
+    # Sandbox / In-memory fallback
+    if user_id not in _sandbox_chats:
+        _sandbox_chats[user_id] = []
+    
+    existing_ids = {m.get("id") for m in _sandbox_chats[user_id]}
+    for msg in messages:
+        if msg.get("id") not in existing_ids:
+            _sandbox_chats[user_id].append(msg)
+            existing_ids.add(msg.get("id"))
+
+    return {"status": "success", "synced_count": len(messages)}
+
+async def get_user_chat_history(user_id: str) -> List[Dict[str, Any]]:
+    """Fetch all chat messages for user from Supabase or sandbox storage."""
+    if not user_id:
+        return []
+
+    if is_supabase_configured():
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                headers = {
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                    "Accept": "application/json"
+                }
+                res = await client.get(
+                    f"{SUPABASE_URL}/rest/v1/chat_messages?user_id=eq.{user_id}&order=created_at.asc",
+                    headers=headers
+                )
+                if res.status_code == 200:
+                    data = res.json()
+                    if isinstance(data, list):
+                        return data
+        except Exception as e:
+            print(f"[SUPABASE CHAT FETCH EXCEPTION] {e}")
+
+    # Fallback to sandbox storage
+    return _sandbox_chats.get(user_id, [])
+
+async def clear_user_chat_history(user_id: str) -> bool:
+    """Clear chat history for user."""
+    if not user_id:
+        return False
+
+    if is_supabase_configured():
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                headers = {
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}"
+                }
+                await client.delete(
+                    f"{SUPABASE_URL}/rest/v1/chat_messages?user_id=eq.{user_id}",
+                    headers=headers
+                )
+        except Exception as e:
+            print(f"[SUPABASE CHAT CLEAR EXCEPTION] {e}")
+
+    _sandbox_chats[user_id] = []
+    return True

@@ -91,3 +91,24 @@ class AuthResponse(BaseModel):
     session_token: Optional[str] = None
     is_new_user: bool = False
     profile: Optional[Dict[str, Any]] = None
+
+
+class ChatMessageItem(BaseModel):
+    id: str
+    user_id: str
+    session_id: Optional[str] = "default"
+    text: str
+    is_user: bool
+    timestamp: str
+    tokens: int = 0
+    created_at: int = 0
+
+class ChatSyncRequest(BaseModel):
+    user_id: str
+    messages: List[ChatMessageItem]
+
+class ChatHistoryResponse(BaseModel):
+    status: str = "success"
+    user_id: str
+    messages: List[ChatMessageItem]
+    total_count: int
