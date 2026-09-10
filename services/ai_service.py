@@ -133,11 +133,11 @@ async def stream_google_gemma_ai(
     if OPENROUTER_API_KEY:
         headers["Authorization"] = f"Bearer {OPENROUTER_API_KEY}"
 
-    # Adjust token limits based on mode
+    # Adjust token limits based on mode (scaled to accommodate Gemini 3.6 Flash reasoning tokens)
     if detail_mode:
-        max_tok = 400 if not is_voice else 150
+        max_tok = 1000 if not is_voice else 400
     else:
-        max_tok = 220 if not is_voice else 80
+        max_tok = 700 if not is_voice else 250
 
     payload = {
         "model": "google/gemini-3.6-flash",
