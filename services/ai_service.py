@@ -135,15 +135,18 @@ async def stream_google_gemma_ai(
 
     # Adjust token limits based on mode (scaled to accommodate Gemini 3.6 Flash reasoning tokens)
     if detail_mode:
-        max_tok = 1000 if not is_voice else 400
+        max_tok = 1200 if not is_voice else 600
     else:
-        max_tok = 700 if not is_voice else 250
+        max_tok = 800 if not is_voice else 500
 
     payload = {
         "model": "google/gemini-3.6-flash",
         "provider": {
             "order": ["Google AI Studio"],
             "allow_fallbacks": False
+        },
+        "reasoning": {
+            "effort": "low"
         },
         "stream": True,
         "messages": messages,
