@@ -76,7 +76,7 @@ def health_check(request: Request):
         "status": "online",
         "service": "WeatherGPT Multi-Sector FastAPI Engine",
         "version": "3.0.0",
-        "ai_engine": "Google: Gemini 2.5 Flash",
+        "ai_engine": "Google: Gemini 3.6 Flash",
         "datasets": [
             "Open-Meteo High-Resolution NWP (ECMWF/GFS)",
             "Global Flood & River Discharge API",
