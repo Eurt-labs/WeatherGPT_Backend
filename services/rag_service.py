@@ -55,7 +55,6 @@ def get_qdrant_client():
 
     try:
         from qdrant_client import QdrantClient
-        # Handle trailing slashes or port specifics in URL
         cleaned_url = QDRANT_URL.rstrip("/")
         _qdrant_client = QdrantClient(
             url=cleaned_url,
@@ -115,30 +114,49 @@ def search_rag(
                 ]
             )
 
-        search_result = client.search(
-            collection_name=QDRANT_COLLECTION,
-            query_vector=query_vector,
-            query_filter=query_filter,
-            limit=limit,
-            score_threshold=score_threshold,
-            with_payload=True
-        )
-
-        # Fallback to unfiltered search if filtered search gave 0 results
-        if not search_result and query_filter:
-            search_result = client.search(
+        # Support modern query_points API
+        if hasattr(client, "query_points"):
+            resp = client.query_points(
                 collection_name=QDRANT_COLLECTION,
-                query_vector=query_vector,
+                query=query_vector,
+                query_filter=query_filter,
                 limit=limit,
                 score_threshold=score_threshold,
                 with_payload=True
             )
+            search_result = resp.points
+            if not search_result and query_filter:
+                resp = client.query_points(
+                    collection_name=QDRANT_COLLECTION,
+                    query=query_vector,
+                    limit=limit,
+                    score_threshold=score_threshold,
+                    with_payload=True
+                )
+                search_result = resp.points
+        else:
+            search_result = client.search(
+                collection_name=QDRANT_COLLECTION,
+                query_vector=query_vector,
+                query_filter=query_filter,
+                limit=limit,
+                score_threshold=score_threshold,
+                with_payload=True
+            )
+            if not search_result and query_filter:
+                search_result = client.search(
+                    collection_name=QDRANT_COLLECTION,
+                    query_vector=query_vector,
+                    limit=limit,
+                    score_threshold=score_threshold,
+                    with_payload=True
+                )
 
         results = []
         for point in search_result:
             payload = point.payload or {}
             results.append({
-                "id": point.id,
+                "id": str(point.id),
                 "score": round(float(point.score), 4),
                 "title": payload.get("title", "Advisory Rule"),
                 "sector": payload.get("sector", "meteorology"),
@@ -201,13 +219,15 @@ def get_rag_status() -> Dict[str, Any]:
             }
 
         coll_info = client.get_collection(collection_name=QDRANT_COLLECTION)
+        points_count = getattr(coll_info, "points_count", 0)
+        indexed_count = getattr(coll_info, "indexed_vectors_count", points_count)
         return {
             "status": "ready",
             "message": f"Connected to Qdrant Cloud collection '{QDRANT_COLLECTION}'",
             "connected": True,
             "collection": QDRANT_COLLECTION,
-            "points_count": coll_info.points_count,
-            "vectors_count": coll_info.vectors_count,
+            "points_count": points_count,
+            "indexed_vectors_count": indexed_count,
             "embedding_model": EMBEDDING_MODEL_NAME
         }
     except Exception as e:

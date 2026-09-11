@@ -151,6 +151,15 @@ def main():
     else:
         print(f"[*] Qdrant collection '{QDRANT_COLLECTION}' already exists.")
 
+    try:
+        client.create_payload_index(
+            collection_name=QDRANT_COLLECTION,
+            field_name="sector",
+            field_schema=models.PayloadSchemaType.KEYWORD
+        )
+    except Exception:
+        pass
+
     # Generate Embeddings in batch
     print("\n[*] Generating vector embeddings for all chunks...")
     texts_to_embed = [
