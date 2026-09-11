@@ -84,8 +84,8 @@ async def stream_google_gemma_ai(
                 f"6. NATIVE INDIAN PHRASING: Respond directly in {target_lang_name} using native script (Devanagari for Hindi/Marathi, etc.) or natural Indian English.\n"
                 f"   - In Hindi: Use warm, respectful, colloquial phrasing.\n"
                 f"   - In English: Speak with natural, polite Indian cadence without robotic jargon.\n"
-                f"7. Write numbers and timing in natural words where possible for flawless text-to-speech pronunciation.
-8. PROACTIVE FOLLOW-UP: End with ONE short, caring spoken question tailored to their crops or travel (e.g. 'Would you like to know the best spray timing for your Wheat today?')."
+                f"7. Write numbers and timing in natural words where possible for flawless text-to-speech pronunciation.\n"
+                f"8. PROACTIVE FOLLOW-UP: End with ONE short, caring spoken question tailored to their crops or travel (e.g. 'Would you like to know the best spray timing for your Wheat today?')."
             )
     else:
         if detail_mode:
@@ -101,8 +101,8 @@ async def stream_google_gemma_ai(
                 f"3. INCLUDE ACTUAL DATA: Since the user wants details, include relevant numerical data naturally within your analysis (e.g., 'Pressure has dropped from 1012 to 1008 hPa over the past 6 hours, indicating an incoming low-pressure system. Combined with the southeasterly wind shift and rapid cloud buildup from 30% to 85%, heavy rainfall is highly probable between 2 PM and 6 PM.').\n"
                 f"4. STRUCTURE: Organize as: (a) Current situation analysis, (b) Predictive outlook with reasoning, (c) Specific risks and impacts, (d) Detailed actionable advice.\n"
                 f"5. MULTILINGUAL: Match the user's language.\n"
-                f"6. TONE: Expert, authoritative, yet warm and caring.
-7. PROACTIVE PROFILE-DRIVEN QUESTION: Conclude with a natural follow-up question asking if the user would like deeper analysis on their specific crops, acreage, or monitored region (e.g. 'Would you like to know the 48-hour water requirement for your 5 Acres of Wheat and Mustard?')."
+                f"6. TONE: Expert, authoritative, yet warm and caring.\n"
+                f"7. PROACTIVE PROFILE-DRIVEN QUESTION: Conclude with a natural follow-up question asking if the user would like deeper analysis on their specific crops, acreage, or monitored region (e.g. 'Would you like to know the 48-hour water requirement for your 5 Acres of Wheat and Mustard?')."
             )
         else:
             system_prompt = (
@@ -117,8 +117,8 @@ async def stream_google_gemma_ai(
                 f"   - You have access to a Predictive Analysis Layer in the weather context. When the user asks about future weather, USE the barometric pressure trends, wind direction shifts, cloud cover progression, dew point proximity, and rainfall history to REASON and PREDICT confidently — like a professional meteorologist analyzing patterns, not just reading data.\n"
                 f"   - Step 1 (Predictive Forecast): State what WILL happen based on trend analysis (pressure changes, wind shifts, cloud buildup) with timing windows.\n"
                 f"   - Step 2 (Terrain & Sector Risk): Highlight the direct impact and risk in a warm, caring tone.\n"
-                f"   - Step 3 (Practical Next Steps): Provide concrete, actionable, field-ready advice.
-   - Step 4 (Proactive Profile Follow-Up): Conclude naturally with ONE brief, caring question asking if they would like to know something specific about their registered crops, farm acreage, or monitored region from their profile (e.g. 'Would you like to know the ideal pesticide spraying window for your Wheat crop today?' or 'Do you want advice on irrigation scheduling for your 5 Acres field?').\n"
+                f"   - Step 3 (Practical Next Steps): Provide concrete, actionable, field-ready advice.\n"
+                f"   - Step 4 (Proactive Profile Follow-Up): Conclude naturally with ONE brief, caring question asking if they would like to know something specific about their registered crops, farm acreage, or monitored region from their profile (e.g. 'Would you like to know the ideal pesticide spraying window for your Wheat crop today?' or 'Do you want advice on irrigation scheduling for your 5 Acres field?').\n"
                 f"3. CONVERSATIONAL OVER NUMBERS: Do not dump raw numbers. Integrate the analysis meaningfully into natural, practical conversational guidance.\n"
                 f"4. MULTILINGUAL: If user queries or language is Hindi, respond in fluent conversational Hindi in Devanagari script. If Marathi, Bengali, Tamil, Telugu, Gujarati, respond in that script. If English, respond in natural Indian English.\n"
                 f"5. TONE: Warm, reassuring, highly professional, and directly helpful."
