@@ -124,6 +124,21 @@ async def stream_google_gemma_ai(
                 f"5. TONE: Warm, reassuring, highly professional, and directly helpful."
             )
 
+    # Grounded Domain Knowledge Retrieval via Qdrant RAG
+    try:
+        from services.rag_service import search_rag, format_rag_context
+        rag_chunks = search_rag(query=user_message, sector=sector_focus, limit=2)
+        if rag_chunks:
+            rag_context = format_rag_context(rag_chunks)
+            system_prompt += (
+                f"\n\n{rag_context}\n\n"
+                f"GROUNDED DOMAIN DIRECTIVE: When relevant, ground your advice in the official guidelines retrieved above "
+                f"(citing exact speed/rainfall thresholds, warning levels, or recommended practices where appropriate)."
+            )
+    except Exception as e:
+        # Fallback: RAG errors should never block conversational AI stream
+        pass
+
     messages = [{"role": "system", "content": system_prompt}]
     for item in history[-4:]:
         messages.append({"role": item.get("role", "user"), "content": item.get("content", "")})

@@ -16,6 +16,7 @@ from models.schemas import WeatherRequest, WeatherResponse, ChatRequest, AuthSen
 from services.supabase_service import send_otp, verify_otp, upsert_user_profile, get_user_profile, sync_chat_messages, get_user_chat_history, clear_user_chat_history
 from services.weather_service import get_live_meteorological_data
 from services.ai_service import stream_google_gemma_ai
+from services.rag_service import get_rag_status, search_rag
 
 load_dotenv()
 
@@ -82,7 +83,8 @@ def health_check(request: Request):
             "Global Flood & River Discharge API",
             "CPCB Standard Air Quality Index",
             "Agri-Soil Moisture (0-7cm) & Evapotranspiration",
-            "80-Year Climate Archive (1940-Present)"
+            "80-Year Climate Archive (1940-Present)",
+            "Qdrant Cloud Vector RAG (Multi-Sector Domain Rules)"
         ]
     }
 
@@ -165,6 +167,30 @@ async def ai_chat_stream(
             language=req.language
         )
     )
+
+@app.get("/api/rag/status", tags=["RAG Knowledge Engine"])
+@limiter.limit("60/minute")
+def check_rag_status(request: Request):
+    """Check Qdrant Cloud connectivity, collection status, and vector counts."""
+    return get_rag_status()
+
+@app.post("/api/rag/query", tags=["RAG Knowledge Engine"])
+@limiter.limit("30/minute")
+def query_rag_knowledge(
+    request: Request,
+    query: str = Query(..., description="Query text to search against domain knowledge base"),
+    sector: str = Query(default=None, description="Optional sector filter (agriculture, disaster, urban, aviation, meteorology, regional)"),
+    limit: int = Query(default=3, ge=1, le=10),
+    auth: bool = Depends(verify_hmac_or_token)
+):
+    """Directly query the Qdrant Cloud knowledge base for relevant sector rules."""
+    results = search_rag(query=query, sector=sector, limit=limit)
+    return {
+        "query": query,
+        "sector_filter": sector,
+        "retrieved_count": len(results),
+        "results": results
+    }
 
 
 @app.post("/api/auth/send-otp", tags=["Authentication"])
