@@ -7,35 +7,44 @@
 
 ---
 
-## 🌐 1. High-Level Ecosystem Architecture
+## 📱 1. High-Level Ecosystem Architecture & Production Context
 
-WeatherGPT is India's premier multi-sector, AI-powered conversational weather and climate advisory platform (built for Smart India Hackathon - SIH 2026). It operates across **three synchronized repositories**:
+WeatherGPT is India's premier multi-sector, AI-powered conversational weather and climate advisory platform (built for Smart India Hackathon - SIH 2026).
+
+> [!IMPORTANT]
+> **PRODUCTION TARGET**: The production application is **strictly the native Android phone app (`WeatherGPT_Android`)**.
+> - In production, users run the app entirely on their mobile phone.
+> - The phone app communicates directly with the cloud backend hosted on Render (**`WeatherGPT_Backend`**) for high-performance AI reasoning powered by Google Gemini 3.6 Flash.
+> - When offline, the phone app relies on its built-in on-device SQLite database (`ChatDatabaseHelper.kt`), disk caches, and native meteorological calculation algorithms.
+> - **`WeatherGPT_Local`** is strictly an **internal developer evaluation tool** for running and benchmarking quantized GGUF models offline on a developer's PC via terminal CLI. It is **NOT** a production dependency, and developers/agents must **NEVER** assume or hallucinate "Zero-RAM" claims or require a PC server for production phone users.
 
 ```
                               ┌───────────────────────────────────┐
                               │     WeatherGPT_Android (Client)   │
+                              │    📱 ★ THE PRODUCTION TARGET ★   │
                               │  - Kotlin / Jetpack Compose / M3  │
                               │  - Domain-Driven Design (DDD)     │
-                              │  - Multi-Provider AI Routing      │
+                              │  - On-Device SQLite & Disk Cache  │
+                              │  - Native Multi-Sector Telemetry  │
                               └─────────────────┬─────────────────┘
                                                 │
                  ┌──────────────────────────────┴──────────────────────────────┐
-                 │ (Online Mode)                                               │ (Offline Mode)
+                 │ (Production Cloud)                                          │ (Internal Dev / Benchmarking Only)
                  ▼                                                             ▼
 ┌───────────────────────────────────┐                         ┌───────────────────────────────────┐
-│     WeatherGPT_Backend (Cloud)    │                         │      WeatherGPT_Local (PC Engine) │
-│  - Hosted on Render (FastAPI)     │                         │  - FastAPI + llama-cpp-python     │
-│  - Google Gemini 3.6 Flash        │                         │  - Qwen2.5 GGUF (7B / 3B / 1.5B)  │
-│  - Rate Limiting (SlowAPI)        │                         │  - Zero-RAM Standalone or Server  │
-│  - Supabase Auth & Sync           │                         │  - USB / Wi-Fi Android Bridge     │
+│     WeatherGPT_Backend (Cloud)    │                         │  WeatherGPT_Local (Dev Workstation│
+│  - Hosted on Render (FastAPI)     │                         │  - Developer PC Testing & CLI     │
+│  - Google Gemini 3.6 Flash        │                         │  - llama-cpp-python + Qwen2.5 GGUF│
+│  - Rate Limiting (SlowAPI)        │                         │  - Interactive Terminal Benchmark │
+│  - Supabase Auth & Sync           │                         │  - Optional ADB USB Debug Bridge  │
 └───────────────────────────────────┘                         └───────────────────────────────────┘
 ```
 
-| Repository | Tech Stack | Primary Responsibilities | Deployment / Run Target |
+| Repository | Tech Stack | Primary Responsibilities | Target & Role |
 | :--- | :--- | :--- | :--- |
-| **`WeatherGPT_Android`** | Kotlin 2.0, Compose BOM, Material3, Coroutines | Native mobile interface, telemetry gathering, location provider, voice AI, SSE streaming chat, on-device SQLite | Android Devices (API 26+) |
-| **`WeatherGPT_Backend`** | Python 3.14, FastAPI, Uvicorn, SlowAPI | Cloud AI inference via Gemini 3.6 Flash, Supabase auth/sync, fallback telemetry | Hosted on **Render** (`https://weathergpt-backend-m5kk.onrender.com`) |
-| **`WeatherGPT_Local`** | Python 3.14, FastAPI, llama-cpp-python | Zero-internet offline LLM inference, quantized GGUF execution, live CLI testing | Local Windows/Linux PC (`localhost:8000`) |
+| **`WeatherGPT_Android`** | Kotlin 2.0, Compose BOM, Material3, Coroutines | Native mobile interface, telemetry gathering, location provider, voice AI, SSE streaming chat, on-device SQLite | **Production App (Android Devices, API 26+)** |
+| **`WeatherGPT_Backend`** | Python 3.14, FastAPI, Uvicorn, SlowAPI | Cloud AI inference via Gemini 3.6 Flash, Supabase auth/sync, fallback telemetry | **Production Cloud Service (Hosted on Render)** |
+| **`WeatherGPT_Local`** | Python 3.14, FastAPI, llama-cpp-python | Developer local testing of quantized GGUF weights, live CLI benchmarking | **Developer Workstation Only (Local PC)** |
 
 ---
 
@@ -97,9 +106,9 @@ To protect the project from accidental regressions, agents and developers must o
 - In `LocationProvider.kt`, always check provider accuracy (`loc.accuracy < lastBestLocation.accuracy`).
 - In `LocationData.kt`, NEVER set non-Indian defaults (like San Francisco). Use `New Delhi, India` (`28.6139°N, 77.2090°E`) as the baseline fallback if GPS permission is denied or pending.
 
-### H. PC Server Memory & Port Management
-- The offline LLM server on port 8000 holds 2–5 GB of GGUF weights in RAM.
-- When shutting down, always free memory and unbind the socket:
+### H. Developer PC Engine Memory & Port Management
+- When developers run the local GGUF server on port 8000 for offline testing, it holds 2–5 GB of weights in PC RAM.
+- When shutting down the test server on PC, always free memory and unbind the socket:
   ```bash
   python main.py --stop
   ```
@@ -107,11 +116,11 @@ To protect the project from accidental regressions, agents and developers must o
 - When starting `main.py`, it automatically detects and terminates any orphan zombie processes on port 8000 before binding.
 
 ### I. Testing Scripts & Batch Files
-- **Rule**: Do NOT create stray `.bat` files for testing. The user can run and test everything with standard Python commands:
+- **Rule**: Do NOT create stray `.bat` files for testing. Developers can run and test everything with standard Python commands:
   ```bash
-  python main.py           # Start server
-  python main.py --stop    # Stop server
-  python chat_cli.py       # Interactive CLI test
+  python main.py           # Start dev server
+  python main.py --stop    # Stop dev server & release memory
+  python chat_cli.py       # Interactive terminal CLI test
   ```
 
 ### J. Git Commit Discipline
@@ -123,7 +132,7 @@ To protect the project from accidental regressions, agents and developers must o
 
 ## 📁 3. Codebase Structure & Directory Guide
 
-### A. Android Client (`WeatherGPT_Android`)
+### A. Android Client (`WeatherGPT_Android`) — ★ Production Target
 ```
 app/src/main/java/com/example/weathergpt_android/
 ├── MainActivity.kt                      # Root Activity, theme state, bottom navigation container
@@ -160,7 +169,7 @@ app/src/main/java/com/example/weathergpt_android/
     └── notifications/ui/NotificationSheet.kt # Emergency meteorological alerts modal
 ```
 
-### B. Cloud Backend (`WeatherGPT_Backend`)
+### B. Cloud Backend (`WeatherGPT_Backend`) — ★ Production Service
 ```
 WeatherGPT_Backend/
 ├── main.py                              # FastAPI entry point, SlowAPI rate limiting, CORS
@@ -173,7 +182,7 @@ WeatherGPT_Backend/
 └── Procfile / render.yaml               # Render deploy command: uvicorn main:app --host 0.0.0.0 --port $PORT
 ```
 
-### C. Local PC Engine (`WeatherGPT_Local/PC`)
+### C. Local PC Engine (`WeatherGPT_Local/PC`) — Developer Testing Only
 ```
 WeatherGPT_local/PC/
 ├── main.py                              # FastAPI GGUF server, interactive model selector, --stop handler
@@ -204,14 +213,14 @@ WeatherGPT_local/PC/
 
 ## 🛠️ 5. Standard Developer Runbooks
 
-### 1. Running & Verifying the Android App
+### 1. Running & Verifying the Android App (Production Target)
 ```bash
 # In WeatherGPT_Android directory:
 ./gradlew assembleDebug
 # Or run directly from Android Studio onto a connected device or emulator.
 ```
 
-### 2. Connecting Android to Local PC Offline Engine
+### 2. Connecting Android to Local PC Engine (Developer Testing Only)
 - **Method A: USB Cable (Zero Latency - Recommended)**
   ```bash
   adb reverse tcp:8000 tcp:8000
@@ -221,17 +230,17 @@ WeatherGPT_local/PC/
   Find PC IP address (e.g. `192.168.1.15`).
   In Android Settings ⚙️ -> Select **PC (Wi-Fi)** -> Connect to `http://192.168.1.15:8000`.
 
-### 3. Running & Testing the Local PC Server
+### 3. Running & Testing the Local PC Server (Developer Testing Only)
 ```bash
 # In WeatherGPT_local/PC directory:
 
-# Start server:
+# Start test server:
 python main.py
 
 # Test interactively via terminal CLI:
 python chat_cli.py
 
-# Cleanly stop server and release port 8000 and RAM:
+# Cleanly stop test server and release port 8000 and RAM:
 python main.py --stop
 ```
 
