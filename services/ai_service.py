@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import json
 import httpx
 from typing import AsyncGenerator, List, Dict
 from dotenv import load_dotenv
@@ -167,7 +168,22 @@ async def stream_google_gemma_ai(
                     return
 
                 async for line in response.aiter_lines():
+                    if not line:
+                        continue
                     if line.startswith("data:"):
-                        yield f"{line}\n\n"
+                        payload_str = line[5:].strip()
+                        if payload_str == "[DONE]":
+                            yield "[DONE]"
+                            break
+                        try:
+                            chunk = json.loads(payload_str)
+                            choices = chunk.get("choices", [])
+                            if choices:
+                                delta = choices[0].get("delta", {})
+                                content = delta.get("content")
+                                if content:
+                                    yield content
+                        except Exception:
+                            continue
         except Exception as e:
             yield f"data: Connection error: {str(e)}\n\n"
