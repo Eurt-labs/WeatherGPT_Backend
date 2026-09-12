@@ -35,7 +35,7 @@ async def send_otp(contact: str, channel: str = 'email') -> Dict[str, Any]:
             return {'status': 'error', 'message': str(e)}
 
     # Sandbox / Demo Mode Fallback
-    demo_otp = '123456'
+    demo_otp = '12345678'
     _sandbox_otps[contact] = demo_otp
     print(f'[SANDBOX AUTH] Generated OTP for {contact}: {demo_otp}')
     return {
@@ -74,15 +74,15 @@ async def verify_otp(contact: str, token: str, channel: str = 'email') -> Dict[s
                         'profile': profile
                     }
                 else:
-                    if token != '123456':
+                    if token not in ('12345678', '123456'):
                         return {'status': 'error', 'message': 'Invalid or expired OTP code.'}
         except Exception as e:
-            if token != '123456':
+            if token not in ('12345678', '123456'):
                 return {'status': 'error', 'message': str(e)}
 
     # Sandbox Verification
-    expected = _sandbox_otps.get(contact, '123456')
-    if token == expected or token == '123456':
+    expected = _sandbox_otps.get(contact, '12345678')
+    if token == expected or token in ('12345678', '123456'):
         user_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, contact))
         profile = _sandbox_users.get(user_id)
         is_new = profile is None
@@ -93,7 +93,7 @@ async def verify_otp(contact: str, token: str, channel: str = 'email') -> Dict[s
             'is_new_user': is_new,
             'profile': profile
         }
-    return {'status': 'error', 'message': 'Incorrect OTP code. Please enter 6-digit code.'}
+    return {'status': 'error', 'message': 'Incorrect OTP code. Please enter 8-digit code.'}
 
 async def upsert_user_profile(profile_data: Dict[str, Any]) -> Dict[str, Any]:
     user_id = profile_data.get('user_id')

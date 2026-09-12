@@ -73,7 +73,7 @@ class AuthSendOtpRequest(BaseModel):
 
 class AuthVerifyOtpRequest(BaseModel):
     contact: str = Field(..., description='Email address or phone number')
-    token: str = Field(..., description='6-digit OTP token')
+    token: str = Field(..., description='8-digit OTP token')
     channel: str = Field(default='email', description='email or phone')
 
 class UserProfileRequest(BaseModel):
