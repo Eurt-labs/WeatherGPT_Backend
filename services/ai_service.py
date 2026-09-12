@@ -28,7 +28,8 @@ async def stream_google_gemma_ai(
     history: List[Dict[str, str]] = None,
     is_voice: bool = False,
     language: str = "en",
-    is_detail_mode: bool = False
+    is_detail_mode: bool = False,
+    reasoning_mode: str = "fast"
 ) -> AsyncGenerator[str, None]:
     """
     Multi-Sector Google Gemini 3.6 Flash Streaming Reasoning Engine.
@@ -39,7 +40,7 @@ async def stream_google_gemma_ai(
         history = []
 
     # Auto-detect detail mode from message content
-    detail_mode = is_detail_mode or is_detail_request(user_message)
+    detail_mode = is_detail_mode or (reasoning_mode == 'thinking') or is_detail_request(user_message)
 
     lang_name_map = {
         "hi": "Hindi (हिन्दी)",
@@ -106,38 +107,34 @@ async def stream_google_gemma_ai(
             )
         else:
             system_prompt = (
-                f"You are WeatherGPT, India's premier Conversational Weather and Climate Intelligence Assistant powered by Google Gemini 3.6 Flash.\n"
+                f"You are WeatherGPT, an ultra-fast, expert conversational AI meteorologist powered by Google Gemini 3.6 Flash.\n"
                 f"Location: {location}\n"
                 f"Sector Focus: {sector_focus.upper()}\n"
                 f"Preferred Language: {target_lang_name} ({language})\n"
-                f"Live Multi-Sector Meteorological Intelligence:\n{weather_context}\n\n"
-                f"CORE CONVERSATIONAL GUIDELINES (STRICT COMPLIANCE REQUIRED):\n"
-                f"1. LENGTH AND FORMAT: Output EXACTLY ONE single cohesive paragraph of 3 to 4 friendly, professional, conversational sentences (approx. 50-80 words). NEVER output bullet points, numbered lists, markdown headers (###), bold title labels, or walls of text.\n"
-                f"2. PREDICTIVE REASONING METHODOLOGY (seamlessly blended into the 3-4 sentences):\n"
-                f"   - You have access to a Predictive Analysis Layer in the weather context. When the user asks about future weather, USE the barometric pressure trends, wind direction shifts, cloud cover progression, dew point proximity, and rainfall history to REASON and PREDICT confidently — like a professional meteorologist analyzing patterns, not just reading data.\n"
-                f"   - Step 1 (Predictive Forecast): State what WILL happen based on trend analysis (pressure changes, wind shifts, cloud buildup) with timing windows.\n"
-                f"   - Step 2 (Terrain & Sector Risk): Highlight the direct impact and risk in a warm, caring tone.\n"
-                f"   - Step 3 (Practical Next Steps): Provide concrete, actionable, field-ready advice.\n"
-                f"   - Step 4 (Proactive Profile Follow-Up): Conclude naturally with ONE brief, caring question asking if they would like to know something specific about their registered crops, farm acreage, or monitored region from their profile (e.g. 'Would you like to know the ideal pesticide spraying window for your Wheat crop today?' or 'Do you want advice on irrigation scheduling for your 5 Acres field?').\n"
-                f"3. CONVERSATIONAL OVER NUMBERS: Do not dump raw numbers. Integrate the analysis meaningfully into natural, practical conversational guidance.\n"
-                f"4. MULTILINGUAL: If user queries or language is Hindi, respond in fluent conversational Hindi in Devanagari script. If Marathi, Bengali, Tamil, Telugu, Gujarati, respond in that script. If English, respond in natural Indian English.\n"
-                f"5. TONE: Warm, reassuring, highly professional, and directly helpful."
+                f"Live Meteorological Telemetry:\n{weather_context}\n\n"
+                f"CRITICAL FAST-MODE RULES (STRICT COMPLIANCE REQUIRED):\n"
+                f"1. MAXIMUM BREVITY: Output EXACTLY ONE single cohesive paragraph of 2 to 3 sentences (40 to 60 words maximum). NEVER write long answers, never write multiple paragraphs, headers, or bullet lists.\n"
+                f"2. ZERO MARKDOWN SYMBOLS: STRICTLY FORBIDDEN to use asterisks (* or **) or hashes (#, ##, ###) or tables. Output pure, clean plain text sentences only.\n"
+                f"3. DIRECT THREE-SENTENCE STRUCTURE:\n"
+                f"   - Sentence 1: Answer user directly with current condition & temperature in {location}.\n"
+                f"   - Sentence 2: Provide 1 actionable advice tailored to {sector_focus.upper()}.\n"
+                f"   - Sentence 3: Conclude with exactly ONE short proactive question ending in '?' tailored to their profile.\n"
+                f"4. MULTILINGUAL: Respond entirely and naturally in {target_lang_name}."
             )
 
-    # Grounded Domain Knowledge Retrieval via Qdrant RAG
-    try:
-        from services.rag_service import search_rag, format_rag_context
-        rag_chunks = search_rag(query=user_message, sector=sector_focus, limit=2)
-        if rag_chunks:
-            rag_context = format_rag_context(rag_chunks)
-            system_prompt += (
-                f"\n\n{rag_context}\n\n"
-                f"GROUNDED DOMAIN DIRECTIVE: When relevant, ground your advice in the official guidelines retrieved above "
-                f"(citing exact speed/rainfall thresholds, warning levels, or recommended practices where appropriate)."
-            )
-    except Exception as e:
-        # Fallback: RAG errors should never block conversational AI stream
-        pass
+    # Grounded Domain Knowledge Retrieval via Qdrant RAG (Detail mode only)
+    if detail_mode:
+        try:
+            from services.rag_service import search_rag, format_rag_context
+            rag_chunks = search_rag(query=user_message, sector=sector_focus, limit=2)
+            if rag_chunks:
+                rag_context = format_rag_context(rag_chunks)
+                system_prompt += (
+                    f"\n\n{rag_context}\n\n"
+                    f"GROUNDED DOMAIN DIRECTIVE: Ground your advice in the official guidelines retrieved above without using raw markdown headers or asterisks."
+                )
+        except Exception:
+            pass
 
     messages = [{"role": "system", "content": system_prompt}]
     for item in history[-4:]:
@@ -152,11 +149,13 @@ async def stream_google_gemma_ai(
     if OPENROUTER_API_KEY:
         headers["Authorization"] = f"Bearer {OPENROUTER_API_KEY}"
 
-    # Adjust token limits based on mode (scaled to accommodate Gemini 3.6 Flash reasoning tokens)
-    if detail_mode:
-        max_tok = 1200 if not is_voice else 600
+    # Adjust token limits based on mode (Strictly clamped for fast mode brevity)
+    if is_voice:
+        max_tok = 50 if not detail_mode else 120
+    elif not detail_mode:
+        max_tok = 160  # Strictly clamped to 40-60 words for Fast mode!
     else:
-        max_tok = 800 if not is_voice else 500
+        max_tok = 650
 
     payload = {
         "model": "google/gemini-3.6-flash",

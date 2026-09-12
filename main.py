@@ -164,7 +164,9 @@ async def ai_chat_stream(
             sector_focus=req.sector_focus,
             history=req.history,
             is_voice=req.is_voice_mode,
-            language=req.language
+            language=req.language,
+            is_detail_mode=getattr(req, 'is_detail_mode', False),
+            reasoning_mode=getattr(req, 'reasoning_mode', 'fast') or 'fast'
         )
     )
 

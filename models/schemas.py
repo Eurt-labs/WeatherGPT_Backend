@@ -63,6 +63,8 @@ class ChatRequest(BaseModel):
     language: Optional[str] = Field(default="en", description="Preferred language code: en, hi, mr, bn, ta, te, gu")
     history: List[Dict[str, str]] = Field(default_factory=list, description="Recent conversation history")
     is_voice_mode: bool = Field(default=False, description="True if prompt comes from Voice AI")
+    is_detail_mode: bool = Field(default=False, description="True if detailed thinking mode is requested")
+    reasoning_mode: Optional[str] = Field(default="fast", description="fast or thinking")
 
 
 class AuthSendOtpRequest(BaseModel):
