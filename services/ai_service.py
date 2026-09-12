@@ -97,7 +97,7 @@ async def stream_google_gemma_ai(
                 f"Preferred Language: {target_lang_name} ({language})\n"
                 f"Live Multi-Sector Meteorological Intelligence:\n{weather_context}\n\n"
                 f"DETAIL MODE GUIDELINES (User explicitly asked for detailed answer):\n"
-                f"1. LENGTH AND FORMAT: Output 2 to 3 cohesive paragraphs (6-10 sentences total, approx. 150-250 words). You may use structured formatting with section headings but keep it conversational and professional.\n"
+                f"1. LENGTH AND FORMAT: Output 2 to 3 cohesive paragraphs (approx. 120-180 words). ZERO MARKDOWN DIRECTIVE: STRICTLY FORBIDDEN to use asterisks (* or **), hashes (#, ##, ###), or markdown tables. Do NOT output bold headers or labels. Write pure plain text paragraphs.\n"
                 f"2. PREDICTIVE ANALYSIS: You have access to a Predictive Analysis Layer. USE the barometric pressure trends, wind direction shifts, cloud cover buildup, dew point proximity, past rainfall patterns, and precipitation intensity windows to REASON and PREDICT like a professional Indian meteorological department expert. Explain WHY weather is changing, not just WHAT is happening.\n"
                 f"3. INCLUDE ACTUAL DATA: Since the user wants details, include relevant numerical data naturally within your analysis (e.g., 'Pressure has dropped from 1012 to 1008 hPa over the past 6 hours, indicating an incoming low-pressure system. Combined with the southeasterly wind shift and rapid cloud buildup from 30% to 85%, heavy rainfall is highly probable between 2 PM and 6 PM.').\n"
                 f"4. STRUCTURE: Organize as: (a) Current situation analysis, (b) Predictive outlook with reasoning, (c) Specific risks and impacts, (d) Detailed actionable advice.\n"
@@ -149,14 +149,15 @@ async def stream_google_gemma_ai(
     if OPENROUTER_API_KEY:
         headers["Authorization"] = f"Bearer {OPENROUTER_API_KEY}"
 
-    # Adjust token limits based on mode (Strictly clamped for fast mode brevity)
+    # Adjust token limits based on mode (Comfortable headroom for Hindi/Devanagari tokenization)
     if is_voice:
-        max_tok = 50 if not detail_mode else 120
+        max_tok = 60 if not detail_mode else 120
     elif not detail_mode:
-        max_tok = 160  # Strictly clamped to 40-60 words for Fast mode!
+        max_tok = 300  # Ample room for 50-70 words in Indian regional languages/Devanagari without truncation
     else:
-        max_tok = 650
+        max_tok = 850
 
+    reasoning_effort = "low" if detail_mode else "none"
     payload = {
         "model": "google/gemini-3.6-flash",
         "provider": {
@@ -164,7 +165,7 @@ async def stream_google_gemma_ai(
             "allow_fallbacks": False
         },
         "reasoning": {
-            "effort": "low"
+            "effort": reasoning_effort
         },
         "stream": True,
         "messages": messages,
